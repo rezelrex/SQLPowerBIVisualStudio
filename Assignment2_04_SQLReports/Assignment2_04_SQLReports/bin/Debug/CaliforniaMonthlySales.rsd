@@ -1,0 +1,68 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<SharedDataSet xmlns="http://schemas.microsoft.com/sqlserver/reporting/2010/01/shareddatasetdefinition" xmlns:rd="http://schemas.microsoft.com/SQLServer/reporting/reportdesigner">
+  <DataSet Name="DataSet1">
+    <Query>
+      <DataSourceReference>WWI_DW_DataSource</DataSourceReference>
+      <CommandText>SELECT
+    -- Select the Calendar Year from Dimension.Date (aliased as d).
+    -- *** Please verify 'CalendarYear' is the correct column name in Dimension.Date ***
+    d.[Calendar Year] AS SaleYear,
+
+    -- Select the Month name column (e.g., 'January') from Dimension.Date.
+    d.Month AS SaleMonthName,
+
+    -- Calculate the sum of the sales amount from the Fact table (aliased as fs).
+    -- *** Please verify 'Fact.Sale' is the correct Fact table name ***
+    -- *** Please verify 'TotalIncludingTax' is the correct sales amount column name in Fact.Sale ***
+    SUM(fs.[Total Including Tax]) AS MonthlySalesAmount
+FROM
+    -- Specify the Fact table containing sales transactions.
+    -- *** Please verify 'Fact.Sale' is the correct Fact table name ***
+    Fact.Sale AS fs
+JOIN
+    -- Join Fact table (fs) with Dimension.Date (d) using the appropriate date keys.
+    -- *** Please verify '[Invoice Date Key]' is the correct foreign key in Fact.Sale ***
+    -- *** Please verify 'Date' is the correct primary key in Dimension.Date ***
+    Dimension.Date AS d ON fs.[Invoice Date Key] = d.Date
+JOIN
+    -- Join Fact table (fs) with Dimension.City (ci) using the appropriate city keys.
+    -- Note: Sometimes the link might be Fact.Sale -&gt; Dimension.Customer -&gt; Dimension.City.
+    -- If fs.[City Key] doesn't exist, check if fs links to Dimension.Customer via [Customer Key],
+    -- and then join Dimension.Customer to Dimension.City via their respective [City Key].
+    -- *** Please verify '[City Key]' exists in Fact.Sale OR how to link Fact.Sale to Dimension.City ***
+    -- *** Please verify '[City Key]' is the correct primary key in Dimension.City ***
+    Dimension.City AS ci ON fs.[City Key] = ci.[City Key]
+WHERE
+    -- Filter for records where the state/province in Dimension.City is 'California'.
+    -- *** Please verify '[State Province]' is the correct column name in Dimension.City ***
+    ci.[State Province] = 'California'
+GROUP BY
+    -- Group the results by year...
+    -- *** Please verify 'CalendarYear' is the correct column name in Dimension.Date ***
+    d.[Calendar Year],
+    -- ...by month name (since it's in the SELECT)...
+    d.Month,
+    -- ...and by month number (to ensure correct aggregation and for sorting).
+    d.[Calendar Month Number]
+ORDER BY
+    -- Sort the final results first by Year (ascending)...
+    SaleYear,
+    -- ...then by the Calendar Month Number (ascending, 1-12) for chronological order.
+    d.[Calendar Month Number];</CommandText>
+    </Query>
+    <Fields>
+      <Field Name="SaleYear">
+        <DataField>SaleYear</DataField>
+        <rd:TypeName>System.Int32</rd:TypeName>
+      </Field>
+      <Field Name="SaleMonthName">
+        <DataField>SaleMonthName</DataField>
+        <rd:TypeName>System.String</rd:TypeName>
+      </Field>
+      <Field Name="MonthlySalesAmount">
+        <DataField>MonthlySalesAmount</DataField>
+        <rd:TypeName>System.Decimal</rd:TypeName>
+      </Field>
+    </Fields>
+  </DataSet>
+</SharedDataSet>
